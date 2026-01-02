@@ -255,7 +255,13 @@ PRODUCT_COPY_FILES += \
 
 # Sensors
 PRODUCT_PACKAGES += \
-    android.hardware.sensors-service.xiaomi-multihal
+    android.hardware.sensors-service.xiaomi-multihal \
+    libsensorndkbridge \
+    sensors.miatoll
+    
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
+    
 
 # Shipping API level
 PRODUCT_SHIPPING_API_LEVEL := 29
@@ -263,6 +269,7 @@ PRODUCT_SHIPPING_API_LEVEL := 29
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += \
     $(LOCAL_PATH) \
+    $(LOCAL_PATH)/sensors \
     bootable/deprecated-ota \
     hardware/google/interfaces \
     hardware/google/pixel \
