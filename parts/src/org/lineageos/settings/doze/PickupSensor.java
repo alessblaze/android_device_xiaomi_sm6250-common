@@ -21,6 +21,8 @@ import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
+import android.hardware.TriggerEvent;
+import android.hardware.TriggerEventListener;
 import android.hardware.SensorManager;
 import android.os.SystemClock;
 import android.util.Log;
@@ -29,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class PickupSensor implements SensorEventListener {
+public class PickupSensor extends TriggerEventListener {
     private static final boolean DEBUG = false;
     private static final String TAG = "PickupSensor";
 
@@ -45,46 +47,38 @@ public class PickupSensor implements SensorEventListener {
     public PickupSensor(Context context) {
         mContext = context;
         mSensorManager = mContext.getSystemService(SensorManager.class);
-        mSensor = DozeUtils.getSensor(mSensorManager, "xiaomi.sensor.pickup");
+        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PICK_UP_GESTURE);
         mExecutorService = Executors.newSingleThreadExecutor();
     }
 
     private Future<?> submit(Runnable runnable) { return mExecutorService.submit(runnable); }
 
     @Override
-    public void onSensorChanged(SensorEvent event) {
+    public void onTrigger(TriggerEvent event) {
         if (DEBUG)
             Log.d(TAG, "Got sensor event: " + event.values[0]);
 
-        long delta = SystemClock.elapsedRealtime() - mEntryTimestamp;
-        if (delta < MIN_PULSE_INTERVAL_MS) {
-            return;
-        }
+        long now = SystemClock.elapsedRealtime();
+        if (now - mEntryTimestamp < MIN_PULSE_INTERVAL_MS) return;
 
-        mEntryTimestamp = SystemClock.elapsedRealtime();
+        mEntryTimestamp = now;
+        DozeUtils.wakeOrLaunchDozePulse(mContext);
 
-        if (event.values[0] == 1) {
-            DozeUtils.wakeOrLaunchDozePulse(mContext);
-        }
+        // re-arm
+        mSensorManager.requestTriggerSensor(this, mSensor);
     }
 
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        /* Empty */
-    }
 
     protected void enable() {
-        if (DEBUG)
-            Log.d(TAG, "Enabling");
-        submit(() -> {
-            mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            mEntryTimestamp = SystemClock.elapsedRealtime();
-        });
-    }
+    if (mSensor == null) return;
+
+    	mEntryTimestamp = SystemClock.elapsedRealtime();
+    	mSensorManager.requestTriggerSensor(this, mSensor);
+	}
 
     protected void disable() {
         if (DEBUG)
             Log.d(TAG, "Disabling");
-        submit(() -> { mSensorManager.unregisterListener(this, mSensor); });
+        submit(() -> { mSensorManager.cancelTriggerSensor(this, mSensor); });
     }
 }
