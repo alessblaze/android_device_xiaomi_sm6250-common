@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2015 The CyanogenMod Project
  *               2017-2018 The LineageOS Project
+ *		 2026 Aless Microsystems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +24,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.util.Log;
 
 public class DozeService extends Service {
     private static final String TAG = "DozeService";
     private static final boolean DEBUG = false;
-
+    private PowerManager mPowerManager;
+    private PowerManager.WakeLock mWakeLock;
     private AodSensor mAodSensor;
     private ProximitySensor mProximitySensor;
     private PickupSensor mPickupSensor;
@@ -40,11 +43,17 @@ public class DozeService extends Service {
         mAodSensor = new AodSensor(this);
         mProximitySensor = new ProximitySensor(this);
         mPickupSensor = new PickupSensor(this);
-
+        mPowerManager = getSystemService(PowerManager.class);
+        mWakeLock = mPowerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "org.lineageos.settings.doze:DozeService");
+   	mWakeLock.setReferenceCounted(false);
+   	
         IntentFilter screenStateFilter = new IntentFilter();
         screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
         screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(mScreenStateReceiver, screenStateFilter);
+        
     }
 
     @Override
@@ -58,10 +67,16 @@ public class DozeService extends Service {
     public void onDestroy() {
         if (DEBUG)
             Log.d(TAG, "Destroying service");
-        super.onDestroy();
+
         this.unregisterReceiver(mScreenStateReceiver);
-        mProximitySensor.disable();
-        mPickupSensor.disable();
+
+        if (mWakeLock != null && mWakeLock.isHeld()) {
+     	   mWakeLock.release();
+    	}   
+    	mProximitySensor.disable();
+        mPickupSensor.disable(); 
+        mAodSensor.disable();
+        super.onDestroy();
     }
 
     @Override
@@ -72,6 +87,9 @@ public class DozeService extends Service {
     private void onDisplayOn() {
         if (DEBUG)
             Log.d(TAG, "Display on");
+        if (!mWakeLock.isHeld()) {
+                mWakeLock.acquire();
+            }    
         if (DozeUtils.isPickUpEnabled(this)) {
             mPickupSensor.disable();
         }
@@ -86,6 +104,9 @@ public class DozeService extends Service {
     private void onDisplayOff() {
         if (DEBUG)
             Log.d(TAG, "Display off");
+        if (mWakeLock.isHeld()) {
+                mWakeLock.release();
+            }    
         if (DozeUtils.isPickUpEnabled(this)) {
             mPickupSensor.enable();
         }

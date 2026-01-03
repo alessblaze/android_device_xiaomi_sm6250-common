@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2015 The CyanogenMod Project
  *               2017-2018 The LineageOS Project
+ *		 2026 Aless Microsystems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +20,6 @@ package org.lineageos.settings.doze;
 
 import android.content.Context;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.TriggerEvent;
 import android.hardware.TriggerEventListener;
 import android.hardware.SensorManager;
