@@ -46,7 +46,7 @@ public class PickupSensor extends TriggerEventListener {
     public PickupSensor(Context context) {
         mContext = context;
         mSensorManager = mContext.getSystemService(SensorManager.class);
-        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PICK_UP_GESTURE);
+        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PICK_UP_GESTURE, true);
         mExecutorService = Executors.newSingleThreadExecutor();
     }
 
@@ -54,18 +54,17 @@ public class PickupSensor extends TriggerEventListener {
 
     @Override
     public void onTrigger(TriggerEvent event) {
-        if (DEBUG)
-            Log.d(TAG, "Got sensor event: " + event.values[0]);
+    	long now = SystemClock.elapsedRealtime();
 
-        long now = SystemClock.elapsedRealtime();
-        if (now - mEntryTimestamp < MIN_PULSE_INTERVAL_MS) return;
+    	if (now - mEntryTimestamp >= MIN_PULSE_INTERVAL_MS) {
+    	    mEntryTimestamp = now;
+    	    DozeUtils.wakeOrLaunchDozePulse(mContext);
+    	}
 
-        mEntryTimestamp = now;
-        DozeUtils.wakeOrLaunchDozePulse(mContext);
+    	// Always re-arm, even if we ignored this event
+    	mSensorManager.requestTriggerSensor(this, mSensor);
+	}
 
-        // re-arm
-        mSensorManager.requestTriggerSensor(this, mSensor);
-    }
 
 
     protected void enable() {

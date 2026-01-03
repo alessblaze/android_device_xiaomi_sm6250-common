@@ -32,7 +32,6 @@ public class DozeService extends Service {
     private static final boolean DEBUG = false;
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
-    private AodSensor mAodSensor;
     private ProximitySensor mProximitySensor;
     private PickupSensor mPickupSensor;
 
@@ -40,7 +39,6 @@ public class DozeService extends Service {
     public void onCreate() {
         if (DEBUG)
             Log.d(TAG, "Creating service");
-        mAodSensor = new AodSensor(this);
         mProximitySensor = new ProximitySensor(this);
         mPickupSensor = new PickupSensor(this);
         mPowerManager = getSystemService(PowerManager.class);
@@ -75,7 +73,6 @@ public class DozeService extends Service {
     	}   
     	mProximitySensor.disable();
         mPickupSensor.disable(); 
-        mAodSensor.disable();
         super.onDestroy();
     }
 
@@ -96,9 +93,6 @@ public class DozeService extends Service {
         if (DozeUtils.isHandwaveGestureEnabled(this) || DozeUtils.isPocketGestureEnabled(this)) {
             mProximitySensor.disable();
         }
-        if (DozeUtils.isDozeAutoBrightnessEnabled(this)) {
-            mAodSensor.disable();
-        }
     }
 
     private void onDisplayOff() {
@@ -113,9 +107,7 @@ public class DozeService extends Service {
         if (DozeUtils.isHandwaveGestureEnabled(this) || DozeUtils.isPocketGestureEnabled(this)) {
             mProximitySensor.enable();
         }
-        if (DozeUtils.isDozeAutoBrightnessEnabled(this)) {
-            mAodSensor.enable();
-        }
+
     }
 
     private BroadcastReceiver mScreenStateReceiver = new BroadcastReceiver() {
