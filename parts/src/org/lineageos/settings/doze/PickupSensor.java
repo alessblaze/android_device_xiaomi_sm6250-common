@@ -62,6 +62,8 @@ public class PickupSensor extends TriggerEventListener {
     	}
 
     	// Always re-arm, even if we ignored this event
+    	// cancel is not proper way but in case of issue its here.
+    	mSensorManager.cancelTriggerSensor(this, mSensor);
     	mSensorManager.requestTriggerSensor(this, mSensor);
 	}
 
